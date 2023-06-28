@@ -2,16 +2,67 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Run Extension",
+			"name": "Run Extension (Use DAP Server)",
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/test_project",
+				"${workspaceFolder}/test_project/bin/main.dart"
+			],
+			"env": {
+				// Also below in Dart Server.
+				"CUSTOM_DAP_SERVER_PORT": "8125",
+			},
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"preLaunchTask": "${defaultBuildTask}",
+			"presentation": {
+				"hidden": true
+			}
+		},
+		{
+			"name": "Run Extension (Use DAP Single-Session Mode)",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/test_project",
+				"${workspaceFolder}/test_project/bin/main.dart"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
 			"preLaunchTask": "${defaultBuildTask}",
+			"presentation": {
+				"order": 2
+			}
+		},
+		{
+			"name": "Run Debug Adapter in Server Mode",
+			"type": "dart",
+			"request": "launch",
+			"program": "${workspaceFolder}/custom_adapter/bin/custom_adapter.dart",
+			"env": {
+				// Also above in Dart Server.
+				"CUSTOM_DAP_SERVER_PORT": "8125",
+			},
+			"presentation": {
+				"hidden": true
+			}
+		}
+	],
+	"compounds": [
+		{
+			"name": "Extension + Adapter Server",
+			"configurations": [
+				"Run Extension (Use DAP Server)",
+				"Run Debug Adapter in Server Mode",
+			],
+			"presentation": {
+				"order": 1
+			}
 		}
 	]
 }

@@ -2,8 +2,8 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Dart",
-			"type": "dart",
+			"name": "Custom Dart",
+			"type": "dart-custom",
 			"request": "launch",
 			"program": "bin/main.dart",
 			"cwd": "${workspaceFolder}"

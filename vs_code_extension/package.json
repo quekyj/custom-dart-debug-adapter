@@ -10,9 +10,19 @@
     "Other"
   ],
   "activationEvents": [
+    "onDebug"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "debuggers": [
+      {
+        "type": "dart-custom",
+        "label": "Custom Dart Debugger",
+        "languages": [
+          "dart"
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
