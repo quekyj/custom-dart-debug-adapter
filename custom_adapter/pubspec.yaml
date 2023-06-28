@@ -1,0 +1,6 @@
+name: custom_adapter
+description: A sample command-line application.
+version: 1.0.0
+
+environment:
+  sdk: ^3.0.0
