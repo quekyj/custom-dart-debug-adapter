@@ -7,23 +7,39 @@ import 'package:dds/dap.dart';
 /// A DAP server that binds to a port and runs in multi-session mode.
 class DapServer {
   final ServerSocket _socket;
+
+  /// ByteStreamServerChannel
+  ///
+  /// A wrapper over a Stream/StreamSink that encodes/decores
+  /// DAP/LSP request/response/event messages.
   final _channels = <ByteStreamServerChannel>{};
+
+  /// A base DAP Debug Adapter implementation for running and
+  /// debugging Dart-based applications (including Flutter and Tests).
   final _adapters = <DartDebugAdapter>{};
   final DartDebugAdapter Function(ByteStreamServerChannel channel)
       adapterConstructor;
 
+  /// ._ is a private constructor
+  ///
+  /// When we create DAPServer, we need to pass the DAPServer the socket and
+  /// adapter Constructor
   DapServer._(this._socket, this.adapterConstructor) {
     _socket.listen(_acceptConnection);
   }
 
+  /// getter for host and port.
   String get host => _socket.address.host;
   int get port => _socket.port;
 
+  /// stop debug adapter function that called when client is
+  /// destroyed
   Future<void> stop() async {
     _channels.forEach((client) => client.close());
     await _socket.close();
   }
 
+  /// Create the accept connection.
   void _acceptConnection(Socket client) {
     final address = client.remoteAddress;
     print('Accepted connection from $address');
@@ -33,6 +49,7 @@ class DapServer {
     _createAdapter(client.transform(Uint8ListTransformer()), client);
   }
 
+  /// Create adapter
   void _createAdapter(Stream<List<int>> _input, StreamSink<List<int>> _output) {
     final channel = ByteStreamServerChannel(_input, _output, null);
     final adapter = adapterConstructor(channel);
