@@ -142,7 +142,6 @@ class MyCustomDebugAdapter extends DartCliDebugAdapter {
         // data kind is ROHD
         if (data is FrameScopeData && data.kind == FrameScopeDataKind.rohd) {
           final vars = data.frame.vars;
-          print(vars);
           if (vars != null) {
             Future<Variable> convert(int index, vm.BoundVariable variable) {
               // Store the expression that gets this object as we may need it to
@@ -166,38 +165,18 @@ class MyCustomDebugAdapter extends DartCliDebugAdapter {
               );
             }
 
-            final List<Variable> resVarCandidate = [];
-            var resVar;
-            for (int i = 0; i < vars.length; i++) {
-              if (vars[i].value.classRef?.name == 'Logic') {
-                resVar = await convert(i, vars[i]);
-                resVarCandidate.add(resVar);
-              }
-            }
+            variables.addAll(await Future.wait(vars
+                .where((variables) => variables.value.classRef?.name == 'Logic')
+                .mapIndexed(convert)));
 
-            response.variables.addAll(resVarCandidate);
+            response.variables.addAll(variables);
 
             // Sort the variables by name.
             // variables.sortBy((v) => v.name);
           }
         }
 
-        // Get all the variables
-        // for (int i = 0; i < response.variables.length; i++) {
-        //   if (response.variables[i].name == 'andG') {
-        //     // print(response.variables[i].name);
-        //     // print(response.variables[i].value);
-        //     // print(response.variables[i].variablesReference);
-
-        //     args = VariablesArguments.fromMap({
-        //       'variablesReference': response.variables[i].variablesReference
-        //     });
-
-        //     super.variablesRequest(request, args, (response) {
-        //       print(response.variables[1].name);
-        //     });
-        //   }
-        // }
+        // Return all the response
         sendResponse(response);
       },
     );
