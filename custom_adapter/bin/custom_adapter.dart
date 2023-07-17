@@ -142,10 +142,9 @@ class MyCustomDebugAdapter extends DartCliDebugAdapter {
         // data kind is ROHD
         if (data is FrameScopeData && data.kind == FrameScopeDataKind.rohd) {
           final vars = data.frame.vars;
+          const filteringClassRef = ['Logic', '_Wire'];
           if (vars != null) {
             Future<Variable> convert(int index, vm.BoundVariable variable) {
-              // Store the expression that gets this object as we may need it to
-              // compute evaluateNames for child objects later.
               final value = variable.value;
 
               if (value is vm.InstanceRef) {
@@ -165,10 +164,18 @@ class MyCustomDebugAdapter extends DartCliDebugAdapter {
               );
             }
 
-            variables.addAll(await Future.wait(vars
-                .where((variables) => variables.value.classRef?.name == 'Logic')
-                .mapIndexed(convert)));
-
+            // Add all the variable to the variables list from super
+            variables.addAll(
+              await Future.wait(
+                // Wait for conversion from VM response to Variable
+                vars
+                    .where(
+                      (variables) => filteringClassRef
+                          .contains(variables.value.classRef?.name),
+                    )
+                    .mapIndexed(convert),
+              ),
+            );
             response.variables.addAll(variables);
 
             // Sort the variables by name.
