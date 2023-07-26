@@ -1,19 +1,81 @@
-import 'dart:developer';
+import 'package:meta/meta.dart';
 import 'package:rohd/rohd.dart';
 
-class AndGate extends Module {
-  List twoDimensionLogic = <Logic>[];
+/// An abstract class for all adder module.
+abstract class Adder extends Module {
+  /// The input to the adder pin [a].
+  @protected
+  late final Logic a;
 
-  Logic get c => output('c');
-  AndGate(Logic a, Logic b) {
-    a = addInput('a', a);
-    b = addInput('b', b);
-    final c = addOutput('c');
+  /// The input to the adder pin [b].
+  @protected
+  late final Logic b;
 
-    twoDimensionLogic.add(a);
-    twoDimensionLogic.add(b);
+  /// The addition results [sum].
+  Logic get sum;
 
-    c <= a & b;
+  /// Takes in input [a] and input [b] and return the [sum] of the addition
+  /// result. The width of input [a] and [b] must be the same.
+  Adder(Logic a, Logic b, {super.name}) {
+    if (a.width != b.width) {
+      throw Exception('inputs of a and b should have same width.');
+    }
+    this.a = addInput('a', a, width: a.width);
+    this.b = addInput('b', b, width: b.width);
+  }
+}
+
+/// A simple full-adder with inputs `a` and `b` to be added with a `carryIn`.
+class FullAdder extends Module {
+  /// The addition's result [sum].
+  Logic get sum => output('sum');
+
+  /// The carry bit's result [carryOut].
+  Logic get carryOut => output('carry_out');
+
+  /// Constructs a [FullAdder] with value [a], [b] and [carryIn] based on
+  /// full adder truth table.
+  FullAdder({
+    required Logic a,
+    required Logic b,
+    required Logic carryIn,
+    super.name = 'full_adder',
+  }) {
+    a = addInput('a', a, width: a.width);
+    b = addInput('b', b, width: b.width);
+    carryIn = addInput('carry_in', carryIn, width: carryIn.width);
+
+    final carryOut = addOutput('carry_out');
+    final sum = addOutput('sum');
+
+    final and1 = carryIn & (a ^ b);
+    final and2 = b & a;
+
+    sum <= (a ^ b) ^ carryIn;
+    carryOut <= and1 | and2;
+  }
+}
+
+class RippleCarryAdder extends Adder {
+  /// The List of results returned from the [FullAdder].
+  final _sum = <Logic>[];
+
+  /// The final result of the NBitAdder in a list of Logic.
+  @override
+  Logic get sum => _sum.rswizzle();
+
+  /// Constructs an n-bit adder based on inputs List of inputs.
+  RippleCarryAdder(super.a, super.b, {super.name = 'ripple_carry_adder'}) {
+    Logic carry = Const(0);
+
+    for (var i = 0; i < a.width; i++) {
+      final fullAdder = FullAdder(a: a[i], b: b[i], carryIn: carry);
+
+      carry = fullAdder.carryOut;
+      _sum.add(fullAdder.sum);
+    }
+
+    _sum.add(carry);
   }
 }
 
@@ -23,22 +85,15 @@ void main() async {
   // and also have a fake variable in the Variables window.
   final message = 'Hello!';
 
-  final a = Logic(name: 'a');
-  final b = Logic(width: 1);
-  final c = Logic(name: 'c', width: 10);
+  final a = Logic(width: 3);
+  final b = Logic(width: 3);
 
-  final andG = AndGate(a, b);
+  final adder = RippleCarryAdder(a, b);
+  await adder.build();
+  print(adder.generateSynth());
 
-  await andG.build();
+  a.put(2);
+  b.put(4);
 
-  print(andG.generateSynth());
-
-  a.put(1);
-  b.put(0);
-  c.put(200);
-
-  print(andG.c);
-
-  debugger();
-  print(message);
+  print(adder.sum.value.toInt());
 }

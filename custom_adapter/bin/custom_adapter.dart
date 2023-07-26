@@ -139,35 +139,45 @@ class MyCustomDebugAdapter extends DartCliDebugAdapter {
 
         final variables = <Variable>[];
 
+        const logicFields = [
+          '_dstConnections',
+          '_srcConnection',
+          '_parentModule',
+        ];
+        const moduleFields = [
+          'inputs',
+          'outputs',
+          '_parentModule',
+        ];
+
+        Future<Variable> convert(int index, vm.BoundVariable variable) {
+          final value = variable.value;
+
+          if (value is vm.InstanceRef) {
+            storeEvaluateName(value, variable.name);
+          }
+          final _converter = ProtocolConverter(this);
+          final maxToStringsPerEvaluation = 10;
+
+          return _converter.convertVmResponseToVariable(
+            thread,
+            variable.value,
+            name: variable.name,
+            allowCallingToString: evaluateToStringInDebugViews &&
+                index <= maxToStringsPerEvaluation,
+            evaluateName: variable.name,
+            format: format,
+          );
+        }
+
         // data kind is ROHD
         if (data is FrameScopeData && data.kind == FrameScopeDataKind.rohd) {
           final vars = data.frame.vars;
-          const filteringClassRef = ['Logic', '_Wire'];
+          // Expected to filter module and Logic here
+          const filteringClassRef = ['Logic'];
           if (vars != null) {
-            Future<Variable> convert(int index, vm.BoundVariable variable) {
-              final value = variable.value;
-
-              if (value is vm.InstanceRef) {
-                storeEvaluateName(value, variable.name);
-              }
-              final _converter = ProtocolConverter(this);
-              final maxToStringsPerEvaluation = 10;
-
-              return _converter.convertVmResponseToVariable(
-                thread,
-                variable.value,
-                name: variable.name,
-                allowCallingToString: evaluateToStringInDebugViews &&
-                    index <= maxToStringsPerEvaluation,
-                evaluateName: variable.name,
-                format: format,
-              );
-            }
-
-            // Add all the variable to the variables list from super
             variables.addAll(
               await Future.wait(
-                // Wait for conversion from VM response to Variable
                 vars
                     .where(
                       (variables) => filteringClassRef
@@ -181,6 +191,12 @@ class MyCustomDebugAdapter extends DartCliDebugAdapter {
             // Sort the variables by name.
             // variables.sortBy((v) => v.name);
           }
+        }
+
+        if (data is vm.InstanceRef && data.classRef?.name == 'Logic') {
+          response.variables.removeWhere(
+            (element) => !logicFields.contains(element.name),
+          );
         }
 
         // Return all the response
